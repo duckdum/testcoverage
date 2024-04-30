@@ -21,17 +21,22 @@ jobs:
           node-version: '20.9.0'
       - name: Install dependencies
         run: yarn
-      - name: Run test coverage
-        run: npm run coverage
 
       - name: Restore Coverage Report (from main)
         if: github.ref != 'refs/heads/main'
         uses: actions/cache@v3
         with:
-          path: ./lcov.info
+          path: ./coverage/lcov.info
           key: main-${{ github.sha }}
           restore-keys: |
             main-
+
+      - name: Rename restored coverage report
+        if: github.ref != 'refs/heads/main'
+        run: mv ./coverage/lcov.info ./lcov-base.info
+
+      - name: Run test coverage
+        run: npm run coverage
 
       - name: Cache Coverage Report (to main)
         if: github.ref == 'refs/heads/main'
@@ -47,7 +52,7 @@ jobs:
           barecheck-github-app-token: ${{ secrets.BARECHECK_GITHUB_APP_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           lcov-file: "./coverage/lcov.info"
-          base-lcov-file: "./lcov.info"
+          base-lcov-file: "./lcov-base.info"
           minimum-ratio: 50
           send-summary-comment: true
           show-annotations: "warning"
