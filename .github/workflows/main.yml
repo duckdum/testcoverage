@@ -16,10 +16,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20.9.0'
-      - name: Download code coverage report from base branch
-        uses: actions/download-artifact@v3
-        with:
-          name: ref-lcov.info
       - name: Install dependencies
         run: yarn
       - name: Run test coverage
