@@ -29,6 +29,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           lcov-file: "./coverage/lcov.info"
           base-lcov-file: "./lcov.info"
-          minimum-ratio: 0
+          minimum-ratio: 50
           send-summary-comment: true
           show-annotations: "warning"
