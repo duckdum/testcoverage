@@ -5,6 +5,9 @@ on:
     branches:
       - main
       - develop
+  push:
+    branches:
+      - main
 
 jobs:
 
@@ -21,11 +24,27 @@ jobs:
       - name: Run test coverage
         run: npm run coverage
 
+      - name: Restore Coverage Report (from main)
+        if: github.ref != 'refs/heads/main'
+        uses: actions/cache@v3
+        with:
+          path: ./lcov.info
+          key: main-${{ github.sha }}
+          restore-keys: |
+            main-
+
+      - name: Cache Coverage Report (to main)
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache@v3
+        with:
+          path: ./coverage/lcov.info
+          key: main-${{ github.sha }}
+
       - name: Generate Code Coverage report
         id: code-coverage
         uses: barecheck/code-coverage-action@v1
         with:
-          barecheck-github-app-token: "$2b$10$Hyl7/LI0yukKiN7O9lzwLeERUffiLMg6QKoL1r.KIyofNHBE1Sfey:50216048"
+          barecheck-github-app-token: ${{ secrets.BARECHECK_GITHUB_APP_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           lcov-file: "./coverage/lcov.info"
           base-lcov-file: "./lcov.info"
