@@ -25,7 +25,7 @@ jobs:
         id: code-coverage
         uses: barecheck/code-coverage-action@v1
         with:
-          barecheck-github-app-token: "$2b$10$t/b7603NfAZClAPV12r39.Vju0yvY96UyuJoHlKQqhJa45glz8NGy:50211857"
+          barecheck-github-app-token: "$2b$10$4M0bJ/9bOT8tztknMx8aT.VZahSeUph4fZ.MaRHdOrNORLdH/7iPe:50216048"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           lcov-file: "./coverage/lcov.info"
           base-lcov-file: "./lcov.info"
