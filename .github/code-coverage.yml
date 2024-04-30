@@ -1,0 +1,37 @@
+name: Code Coverage
+
+on: 
+  push:
+    branches:
+      - main  
+  pull_request:
+
+jobs:
+
+   checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js v20.9.0
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.9.0'
+      - name: Download code coverage report from base branch
+        uses: actions/download-artifact@v3
+        with:
+          name: ref-lcov.info
+      - name: Install dependencies
+        run: yarn
+      - name: Run test coverage
+        run: npm run coverage
+
+      - name: Generate Code Coverage report
+        id: code-coverage
+        uses: barecheck/code-coverage-action@v1
+        with:
+          barecheck-github-app-token: ${{ secrets.BARECHECK_GITHUB_APP_TOKEN }}
+          lcov-file: "./coverage/lcov.info"
+          base-lcov-file: "./lcov.info"
+          minimum-ratio: 0
+          send-summary-comment: true
+          show-annotations: "warning"
