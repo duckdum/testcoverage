@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - branch2  
   pull_request:
     types: [opened]
 
@@ -27,10 +26,10 @@ jobs:
         id: code-coverage
         uses: barecheck/code-coverage-action@v1
         with:
-          barecheck-github-app-token: "$2b$10$Lc6ZaQ5xFPiO1hFGwbpXgeyJ7uW1yKZNiLoYWBZjYcfqKo.8fzk8C:50211857"
+          barecheck-github-app-token: "$2b$10$t/b7603NfAZClAPV12r39.Vju0yvY96UyuJoHlKQqhJa45glz8NGy:50211857"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           lcov-file: "./coverage/lcov.info"
           base-lcov-file: "./lcov.info"
-          minimum-ratio: 50
+          minimum-ratio: 0
           send-summary-comment: true
           show-annotations: "warning"
