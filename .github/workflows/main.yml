@@ -22,30 +22,27 @@ jobs:
       - name: Install dependencies
         run: yarn
 
-      - name: Restore Coverage Report (from main)
+      # Download and use the artifact for comparison on non-main branches
+      - name: Download coverage report artifact for comparison
         if: github.ref != 'refs/heads/main'
-        uses: actions/cache@v3
+        uses: actions/download-artifact@v3
         with:
+          name: lcov-base.info
           path: ./coverage/lcov.info
-          key: main-${{ github.sha }}
-          restore-keys: |
-            main-
-
-      - name: Rename restored coverage report
-        if: github.ref != 'refs/heads/main'
-        run: mv ./coverage/lcov.info ./lcov-base.info
 
       - name: Run test coverage
         run: npm run coverage
 
-      - name: Cache Coverage Report (to main)
+      # Upload coverage report as artifact on the main branch for sharing
+      - name: Upload coverage report as artifact (from main)
         if: github.ref == 'refs/heads/main'
-        uses: actions/cache@v3
+        uses: actions/upload-artifact@v3
         with:
+          name: coverage-report
           path: ./coverage/lcov.info
-          key: main-${{ github.sha }}
 
       - name: Generate Code Coverage report
+        if: github.ref != 'refs/heads/main'
         id: code-coverage
         uses: barecheck/code-coverage-action@v1
         with:
