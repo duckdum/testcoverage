@@ -36,7 +36,7 @@ jobs:
       # Upload coverage report as artifact on the main branch for sharing
       - name: Upload coverage report as artifact (from main)
         if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: lcov-base.info
           path: ./coverage/lcov.info
