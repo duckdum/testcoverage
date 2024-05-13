@@ -26,3 +26,4 @@ jobs:
           PULL_REQUEST_BODY: "This is an automatic Pull Request to keep ${FROM_BRANCH} up to date with ${TO_BRANCH}!"
           CONTENT_COMPARISON: true
           REVIEWERS: '["duckdum"]'
+          
