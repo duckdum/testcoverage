@@ -18,10 +18,11 @@ jobs:
           node-version: '20.9.0'
       - name: Opening pull request
         id: pull
-        uses: duckdum/sync-branches-gh@v1.7.0
+        uses: duckdum/sync-branches-gh@v1.8.0
         with:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-          PULL_REQUEST_TITLE: Sync main with develop 
           FROM_BRANCH: "main"
           TO_BRANCH: "develop"
+          PULL_REQUEST_BODY: "This is an automatic Pull Request to keep ${FROM_BRANCH} up to date with ${TO_BRANCH}!"
           CONTENT_COMPARISON: true
+          REVIEWERS: '["duckdum"]'
