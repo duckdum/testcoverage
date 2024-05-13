@@ -25,4 +25,3 @@ jobs:
           FROM_BRANCH: "main"
           TO_BRANCH: "develop"
           CONTENT_COMPARISON: true
-          REVIEWERS: '["boozook"]'
