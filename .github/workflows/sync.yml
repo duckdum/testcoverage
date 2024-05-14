@@ -12,8 +12,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Opening pull request
-        id: pull
+      - name: Create sync pull request
         uses: duckdum/sync-branches-gh@v1.8.0
         with:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
