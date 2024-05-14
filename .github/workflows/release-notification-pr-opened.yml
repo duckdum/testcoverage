@@ -1,0 +1,91 @@
+name: Release Notification on PR Opened
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  notify:
+    if: startsWith(github.event.pull_request.head.ref, 'release-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Send initial message to Slack
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: 'C05PW7HGP36'  # Replace with your Slack channel ID
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pr_title=$(jq -r .pull_request.title "$GITHUB_EVENT_PATH")
+          pr_url=$(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")
+          branch_name=$(jq -r .pull_request.head.ref "$GITHUB_EVENT_PATH")
+          target_branch=$(jq -r .pull_request.base.ref "$GITHUB_EVENT_PATH")
+          initial_message_response=$(curl -s -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H 'Content-type: application/json' --data "{
+            \"channel\": \"$SLACK_CHANNEL\",
+            \"text\": \"New release pull request created: <$pr_url|$pr_title>\nBranch: $branch_name -> $target_branch\"
+          }" https://slack.com/api/chat.postMessage)
+          echo "Initial message response: $initial_message_response"
+          if echo "$initial_message_response" | jq -e .ok > /dev/null; then
+            message_ts=$(echo "$initial_message_response" | jq -r .ts)
+            echo "Message TS: $message_ts"
+            curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H 'Content-Type: application/json' --data "{
+              \"body\": \"Slack message_ts: $message_ts\"
+            }" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/issues/$GITHUB_EVENT_PULL_REQUEST_NUMBER/comments"
+          else
+            echo "Failed to retrieve message_ts"
+            exit 1
+          fi
+
+      - name: Fetch and send commit messages to Slack
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          message_ts: ${{ steps.send_initial_message.outputs.message_ts }}
+          SLACK_CHANNEL: 'C05PW7HGP36'  # Replace with your Slack channel ID
+        run: |
+          declare -A github_to_slack_map=(
+            ["mduchev"]="@Mihail Duchev"
+            ["krzysztof-kolakowski"]="@Krzysztof Kołakowski"
+            ["opchaves"]="@Paulo Chaves"
+            ["ommiles"]="@O.M. Miles"
+            ["duckdum"]="@eduardo"
+            ["rminhoto"]="@Roberto"
+            ["pecabum"]="@Petar Petrov"
+            ["pmwthunkable"]="@Paul Medlock-Walton"
+            ["JanhaviDahihande"]="@janhavi"
+            ["kkrogmerio"]="@Adrian"
+            ["TingC"]="@Ting Chou"
+            ["andresmechali"]="@Andrés Mechali"
+            ["Comum"]="@Miguel Ribeiro"
+            ["weihuali0509"]="@Wei Li"
+          )
+
+          commits_url=$(jq -r .pull_request.commits_url "$GITHUB_EVENT_PATH")
+          repo_url=$(jq -r .repository.html_url "$GITHUB_EVENT_PATH")
+          commits=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $commits_url)
+          commit_messages=""
+          for row in $(echo "${commits}" | jq -r '.[] | @base64'); do
+            _jq() {
+              echo ${row} | base64 --decode | jq -r ${1}
+            }
+            commit_message=$(_jq '.commit.message')
+            commit_sha=$(_jq '.sha')
+            commit_author=$(_jq '.commit.author.name')
+            commit_url="$repo_url/commit/$commit_sha"
+            github_user=$(_jq '.author.login')
+            slack_user=${github_to_slack_map[$github_user]}
+            if [ -z "$slack_user" ]; then
+              slack_user=$commit_author
+            fi
+            commit_messages="$commit_messages- <$commit_url|$commit_message> by $slack_user\n"
+          done
+          if [ -z "$commit_messages" ]; then
+            commit_messages="No commits found."
+          fi
+          curl -s -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H 'Content-type: application/json' --data "{
+            \"channel\": \"$SLACK_CHANNEL\",
+            \"text\": \"Commits in this pull request:\n$commit_messages\",
+            \"thread_ts\": \"$message_ts\"
+          }" https://slack.com/api/chat.postMessage

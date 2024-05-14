@@ -1,8 +1,8 @@
-name: Release Notification
+name: Release Notification on PR Updated
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [synchronize]
 
 jobs:
   notify:
@@ -12,28 +12,13 @@ jobs:
       - name: Install jq
         run: sudo apt-get install -y jq
 
-      - name: Send initial message to Slack
+      - name: Fetch message_ts from comments
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL: 'C05PW7HGP36'  # Replace with your Slack channel ID
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pr_title=$(jq -r .pull_request.title "$GITHUB_EVENT_PATH")
-          pr_url=$(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")
-          branch_name=$(jq -r .pull_request.head.ref "$GITHUB_EVENT_PATH")
-          target_branch=$(jq -r .pull_request.base.ref "$GITHUB_EVENT_PATH")
-          initial_message_response=$(curl -s -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H 'Content-type: application/json' --data "{
-            \"channel\": \"$SLACK_CHANNEL\",
-            \"text\": \"New release pull request created: <$pr_url|$pr_title>\nBranch: $branch_name -> $target_branch\"
-          }" https://slack.com/api/chat.postMessage)
-          echo "Initial message response: $initial_message_response"
-          if echo "$initial_message_response" | jq -e .ok > /dev/null; then
-            message_ts=$(echo "$initial_message_response" | jq -r .ts)
-            echo "Message TS: $message_ts"
-            echo "message_ts=$message_ts" >> $GITHUB_ENV
-          else
-            echo "Failed to retrieve message_ts"
-            exit 1
-          fi
+          comments_url=$(jq -r .pull_request.comments_url "$GITHUB_EVENT_PATH")
+          message_ts=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $comments_url | jq -r '.[] | select(.body | startswith("Slack message_ts:")) | .body' | awk '{print $3}')
+          echo "message_ts=$message_ts" >> $GITHUB_ENV
 
       - name: Fetch and send commit messages to Slack
         env:
@@ -58,7 +43,7 @@ jobs:
             ["Comum"]="@Miguel Ribeiro"
             ["weihuali0509"]="@Wei Li"
           )
-          
+
           commits_url=$(jq -r .pull_request.commits_url "$GITHUB_EVENT_PATH")
           repo_url=$(jq -r .repository.html_url "$GITHUB_EVENT_PATH")
           commits=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $commits_url)
@@ -83,6 +68,6 @@ jobs:
           fi
           curl -s -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H 'Content-type: application/json' --data "{
             \"channel\": \"$SLACK_CHANNEL\",
-            \"text\": \"Commits in this pull request:\n$commit_messages\",
+            \"text\": \"New commits added to the release pull request:\n$commit_messages\",
             \"thread_ts\": \"$message_ts\"
           }" https://slack.com/api/chat.postMessage
