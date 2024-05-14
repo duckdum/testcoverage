@@ -68,15 +68,15 @@ jobs:
           if [ -z "$slack_user" ]; then
             slack_user=$commit_author
           fi
-          commit_messages="- <$commit_url|$commit_message> by $slack_user"
+          commit_message_formatted="- <$commit_url|$commit_message> by $slack_user"
 
-          if [ -z "$commit_messages" ]; then
-            commit_messages="No new commits found."
+          if [ -z "$commit_message_formatted" ]; then
+            commit_message_formatted="No new commits found."
           fi
-          echo "Commit messages: $commit_messages"
-          payload=$(jq -n --arg channel "$SLACK_CHANNEL" --arg text "New commits added to the release pull request:\n$commit_messages" --arg thread_ts "$message_ts" '{
+          echo "Commit message: $commit_message_formatted"
+          payload=$(jq -n --arg channel "$SLACK_CHANNEL" --arg text "New commits added to the release pull request:\n$commit_message_formatted" --arg thread_ts "$message_ts" '{
             channel: $channel,
-            text: $text,
+            text: $text | gsub("\\n"; "\n"),
             thread_ts: $thread_ts
           }')
           curl -s -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H 'Content-type: application/json' --data "$payload" https://slack.com/api/chat.postMessage
