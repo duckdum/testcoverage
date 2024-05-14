@@ -68,14 +68,14 @@ jobs:
           if [ -z "$slack_user" ]; then
             slack_user=$commit_author
           fi
-          commit_message_formatted="- <$commit_url|$commit_message> by $slack_user"
+          commit_message_formatted="<$commit_url|$commit_message> by $slack_user"
 
           if [ -z "$commit_message_formatted" ]; then
             commit_message_formatted="No new commits found."
           fi
           echo "Commit message: $commit_message_formatted"
           
-          payload=$(jq -n --arg channel "$SLACK_CHANNEL" --arg text "New commit added: $commit_message_formatted" --arg thread_ts "$message_ts" '{
+          payload=$(jq -n --arg channel "$SLACK_CHANNEL" --arg text "New commit added to the release pull request:\n$commit_message_formatted" --arg thread_ts "$message_ts" '{
             channel: $channel,
             text: $text,
             thread_ts: $thread_ts
