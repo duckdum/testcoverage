@@ -42,6 +42,23 @@ jobs:
           message_ts: ${{ env.message_ts }}
           SLACK_CHANNEL: 'C05PW7HGP36'  # Replace with your Slack channel ID
         run: |
+          declare -A github_to_slack_map=(
+            ["mduchev"]="@Mihail Duchev"
+            ["krzysztof-kolakowski"]="@Krzysztof Kołakowski"
+            ["opchaves"]="@Paulo Chaves"
+            ["ommiles"]="@O.M. Miles"
+            ["duckdum"]="@eduardo"
+            ["rminhoto"]="@Roberto"
+            ["pecabum"]="@Petar Petrov"
+            ["pmwthunkable"]="@Paul Medlock-Walton"
+            ["JanhaviDahihande"]="@janhavi"
+            ["kkrogmerio"]="@Adrian"
+            ["TingC"]="@Ting Chou"
+            ["andresmechali"]="@Andrés Mechali"
+            ["Comum"]="@Miguel Ribeiro"
+            ["weihuali0509"]="@Wei Li"
+          )
+          
           commits_url=$(jq -r .pull_request.commits_url "$GITHUB_EVENT_PATH")
           repo_url=$(jq -r .repository.html_url "$GITHUB_EVENT_PATH")
           commits=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $commits_url)
@@ -54,7 +71,12 @@ jobs:
             commit_sha=$(_jq '.sha')
             commit_author=$(_jq '.commit.author.name')
             commit_url="$repo_url/commit/$commit_sha"
-            commit_messages="$commit_messages- <$commit_url|$commit_message> by $commit_author\n"
+            github_user=$(_jq '.author.login')
+            slack_user=${github_to_slack_map[$github_user]}
+            if [ -z "$slack_user" ]; then
+              slack_user=$commit_author
+            fi
+            commit_messages="$commit_messages- <$commit_url|$commit_message> by $slack_user\n"
           done
           if [ -z "$commit_messages" ]; then
             commit_messages="No commits found."
