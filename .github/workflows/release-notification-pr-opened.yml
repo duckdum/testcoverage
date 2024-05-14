@@ -34,7 +34,7 @@ jobs:
             message_ts=$(echo "$initial_message_response" | jq -r .ts)
             echo "Message TS: $message_ts"
             new_pr_body="${pr_body}\nSlack message_ts: ${message_ts}"
-            new_pr_body=$(echo "$new_pr_body" | jq -sRr @json)
+            new_pr_body=$(echo "$new_pr_body" | jq -sRr @text)
             echo "New PR body: $new_pr_body"
 
             update_pr_response=$(curl -s -X PATCH -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" --data "$(jq -n --arg body "$new_pr_body" '{body: $body}')" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/$pr_number")
