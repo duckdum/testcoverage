@@ -44,13 +44,23 @@ jobs:
         run: |
           commits_url=$(jq -r .pull_request.commits_url "$GITHUB_EVENT_PATH")
           repo_url=$(jq -r .repository.html_url "$GITHUB_EVENT_PATH")
-          commits=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $commits_url | jq -r '.[] | "- <" + $repo_url + "/commit/" + .sha + "| \(.commit.message)> by \(.commit.author.name)"')
-          echo "Commits: $commits"
-          if [ -z "$commits" ]; then
-            commits="No commits found."
+          commits=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $commits_url)
+          commit_messages=""
+          for row in $(echo "${commits}" | jq -r '.[] | @base64'); do
+            _jq() {
+              echo ${row} | base64 --decode | jq -r ${1}
+            }
+            commit_message=$(_jq '.commit.message')
+            commit_sha=$(_jq '.sha')
+            commit_author=$(_jq '.commit.author.name')
+            commit_url="$repo_url/commit/$commit_sha"
+            commit_messages="$commit_messages- <$commit_url|$commit_message> by $commit_author\n"
+          done
+          if [ -z "$commit_messages" ]; then
+            commit_messages="No commits found."
           fi
           curl -s -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H 'Content-type: application/json' --data "{
             \"channel\": \"$SLACK_CHANNEL\",
-            \"text\": \"Commits in this pull request:\n$commits\",
+            \"text\": \"Commits in this pull request:\n$commit_messages\",
             \"thread_ts\": \"$message_ts\"
           }" https://slack.com/api/chat.postMessage
