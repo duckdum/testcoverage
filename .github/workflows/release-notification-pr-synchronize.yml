@@ -75,13 +75,10 @@ jobs:
           fi
           echo "Commit message: $commit_message_formatted"
           
-          payload=$(cat <<EOF
-{
-  "channel": "$SLACK_CHANNEL",
-  "text": "New commits added to the release pull request:\n$commit_message_formatted",
-  "thread_ts": "$message_ts"
-}
-EOF
-          )
+          payload=$(jq -n --arg channel "$SLACK_CHANNEL" --arg text "New commits added to the release pull request:\n$commit_message_formatted" --arg thread_ts "$message_ts" '{
+            channel: $channel,
+            text: $text,
+            thread_ts: $thread_ts
+          }')
           echo "Payload: $payload"
           curl -s -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H 'Content-type: application/json' --data "$payload" https://slack.com/api/chat.postMessage
