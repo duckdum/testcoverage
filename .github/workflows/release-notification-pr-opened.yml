@@ -2,7 +2,8 @@ name: Release Notification on PR Opened
 
 on:
   pull_request:
-    types: [opened]
+    branches:
+      - 'release-*'
 
 jobs:
   notify:
