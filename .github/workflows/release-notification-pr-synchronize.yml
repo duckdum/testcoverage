@@ -17,10 +17,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           comments_url=$(jq -r .pull_request.comments_url "$GITHUB_EVENT_PATH")
-          message_ts=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $comments_url | jq -r '.[] | select(.body | startswith("Slack message_ts:")) | .body' | awk '{print $3}')
+          echo "Comments URL: $comments_url"
+          comment=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$comments_url" | jq -r '.[] | select(.body | startswith("Slack message_ts:"))')
+          message_ts=$(echo "$comment" | grep -oP 'Slack message_ts: \K\S+')
+          echo "Retrieved message_ts: $message_ts"
           echo "message_ts=$message_ts" >> $GITHUB_ENV
 
-      - name: Fetch and send commit messages to Slack
+      - name: Fetch and send new commit message to Slack
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -46,26 +49,31 @@ jobs:
 
           commits_url=$(jq -r .pull_request.commits_url "$GITHUB_EVENT_PATH")
           repo_url=$(jq -r .repository.html_url "$GITHUB_EVENT_PATH")
-          commits=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $commits_url)
-          commit_messages=""
-          for row in $(echo "${commits}" | jq -r '.[] | @base64'); do
-            _jq() {
-              echo ${row} | base64 --decode | jq -r ${1}
-            }
-            commit_message=$(_jq '.commit.message')
-            commit_sha=$(_jq '.sha')
-            commit_author=$(_jq '.commit.author.name')
-            commit_url="$repo_url/commit/$commit_sha"
-            github_user=$(_jq '.author.login')
-            slack_user=${github_to_slack_map[$github_user]}
-            if [ -z "$slack_user" ]; then
-              slack_user=$commit_author
-            fi
-            commit_messages="$commit_messages- <$commit_url|$commit_message> by $slack_user\n"
-          done
-          if [ -z "$commit_messages" ]; then
-            commit_messages="No commits found."
+          latest_commit=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $commits_url | jq -r '.[-1] | @base64')
+          
+          if [ -z "$latest_commit" ]; then
+            echo "No new commit found."
+            exit 0
           fi
+
+          _jq() {
+            echo ${latest_commit} | base64 --decode | jq -r ${1}
+          }
+          commit_message=$(_jq '.commit.message')
+          commit_sha=$(_jq '.sha')
+          commit_author=$(_jq '.commit.author.name')
+          commit_url="$repo_url/commit/$commit_sha"
+          github_user=$(_jq '.author.login')
+          slack_user=${github_to_slack_map[$github_user]}
+          if [ -z "$slack_user" ]; then
+            slack_user=$commit_author
+          fi
+          commit_messages="- <$commit_url|$commit_message> by $slack_user\n"
+
+          if [ -z "$commit_messages" ]; then
+            commit_messages="No new commits found."
+          fi
+          echo "Commit messages: $commit_messages"
           curl -s -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H 'Content-type: application/json' --data "{
             \"channel\": \"$SLACK_CHANNEL\",
             \"text\": \"New commits added to the release pull request:\n$commit_messages\",
