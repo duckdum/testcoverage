@@ -2,11 +2,12 @@ name: Release Notification on PR Updated
 
 on:
   pull_request:
-    types: [synchronize]
+    branches:
+      - 'release-**'
 
 jobs:
   notify:
-    if: startsWith(github.event.pull_request.head.ref, 'release-')
+    if: github.event.action == 'synchronize'
     runs-on: ubuntu-latest
     steps:
       - name: Install jq
