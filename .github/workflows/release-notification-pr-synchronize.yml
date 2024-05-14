@@ -18,7 +18,7 @@ jobs:
         run: |
           pr_number=$(jq -r .pull_request.number "$GITHUB_EVENT_PATH")
           pr_body=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/$pr_number" | jq -r .body)
-          message_ts=$(echo "$pr_body" | grep -oP 'Slack message_ts: \K\S+')
+          message_ts=$(echo "$pr_body" | grep -oP '^Slack message_ts: \K\S+')
           echo "Retrieved message_ts: $message_ts"
           echo "message_ts=$message_ts" >> $GITHUB_ENV
 
