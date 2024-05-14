@@ -12,14 +12,13 @@ jobs:
       - name: Install jq
         run: sudo apt-get install -y jq
 
-      - name: Fetch message_ts from comments
+      - name: Fetch `thread_ts` from PR description
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          comments_url=$(jq -r .pull_request.comments_url "$GITHUB_EVENT_PATH")
-          echo "Comments URL: $comments_url"
-          comment=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$comments_url" | jq -r '.[] | select(.body | startswith("Slack message_ts:"))')
-          message_ts=$(echo "$comment" | grep -oP 'Slack message_ts: \K\S+')
+          pr_number=$(jq -r .pull_request.number "$GITHUB_EVENT_PATH")
+          pr_body=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/$pr_number" | jq -r .body)
+          message_ts=$(echo "$pr_body" | grep -oP 'Slack message_ts: \K\S+')
           echo "Retrieved message_ts: $message_ts"
           echo "message_ts=$message_ts" >> $GITHUB_ENV
 
