@@ -43,7 +43,8 @@ jobs:
           SLACK_CHANNEL: 'C05PW7HGP36'  # Replace with your Slack channel ID
         run: |
           commits_url=$(jq -r .pull_request.commits_url "$GITHUB_EVENT_PATH")
-          commits=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $commits_url | jq -r '.[] | "- \(.commit.message) by \(.commit.author.name)"')
+          repo_url=$(jq -r .repository.html_url "$GITHUB_EVENT_PATH")
+          commits=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $commits_url | jq -r '.[] | "- <" + $repo_url + "/commit/" + .sha + "| \(.commit.message)> by \(.commit.author.name)"')
           echo "Commits: $commits"
           if [ -z "$commits" ]; then
             commits="No commits found."
