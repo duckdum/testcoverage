@@ -75,7 +75,7 @@ jobs:
           fi
           echo "Commit message: $commit_message_formatted"
           
-          payload=$(jq -n --arg channel "$SLACK_CHANNEL" --arg text "New commit added to the release pull request:\n$commit_message_formatted" --arg thread_ts "$message_ts" '{
+          payload=$(jq -n --arg channel "$SLACK_CHANNEL" --arg text "New commit added: $commit_message_formatted" --arg thread_ts "$message_ts" '{
             channel: $channel,
             text: $text,
             thread_ts: $thread_ts
