@@ -49,21 +49,18 @@ jobs:
 
           commits_url=$(jq -r .pull_request.commits_url "$GITHUB_EVENT_PATH")
           repo_url=$(jq -r .repository.html_url "$GITHUB_EVENT_PATH")
-          latest_commit=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $commits_url | jq -r '.[-1] | @base64')
-          
+          latest_commit=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $commits_url | jq -r '.[-1]')
+
           if [ -z "$latest_commit" ]; then
             echo "No new commit found."
             exit 0
           fi
 
-          _jq() {
-            echo ${latest_commit} | base64 --decode | jq -r ${1}
-          }
-          commit_message=$(_jq '.commit.message')
-          commit_sha=$(_jq '.sha')
-          commit_author=$(_jq '.commit.author.name')
+          commit_message=$(echo "$latest_commit" | jq -r '.commit.message')
+          commit_sha=$(echo "$latest_commit" | jq -r '.sha')
+          commit_author=$(echo "$latest_commit" | jq -r '.commit.author.name')
           commit_url="$repo_url/commit/$commit_sha"
-          github_user=$(_jq '.author.login')
+          github_user=$(echo "$latest_commit" | jq -r '.author.login')
           slack_user=${github_to_slack_map[$github_user]}
           if [ -z "$slack_user" ]; then
             slack_user=$commit_author
@@ -74,11 +71,9 @@ jobs:
             commit_message_formatted="No new commits found."
           fi
           echo "Commit message: $commit_message_formatted"
-          
-          payload=$(jq -n --arg channel "$SLACK_CHANNEL" --arg text "New commits added to the release pull request:\n$commit_message_formatted" --arg thread_ts "$message_ts" '{
-            channel: $channel,
-            text: $text,
-            thread_ts: $thread_ts
-          }')
-          echo "Payload: $payload"
-          curl -s -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H 'Content-type: application/json' --data "$payload" https://slack.com/api/chat.postMessage
+
+          curl -s -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H 'Content-type: application/json' --data "{
+            \"channel\": \"$SLACK_CHANNEL\",
+            \"text\": \"New commits added to the release pull request:\n$commit_message_formatted\",
+            \"thread_ts\": \"$message_ts\"
+          }" https://slack.com/api/chat.postMessage
