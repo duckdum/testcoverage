@@ -22,6 +22,9 @@ jobs:
           pr_url=$(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")
           branch_name=$(jq -r .pull_request.head.ref "$GITHUB_EVENT_PATH")
           target_branch=$(jq -r .pull_request.base.ref "$GITHUB_EVENT_PATH")
+          pr_number=$(jq -r .pull_request.number "$GITHUB_EVENT_PATH")
+          pr_body=$(jq -r .pull_request.body "$GITHUB_EVENT_PATH")
+
           initial_message_response=$(curl -s -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H 'Content-type: application/json' --data "{
             \"channel\": \"$SLACK_CHANNEL\",
             \"text\": \"New release pull request created: <$pr_url|$pr_title>\nBranch: $branch_name -> $target_branch\"
@@ -30,14 +33,12 @@ jobs:
           if echo "$initial_message_response" | jq -e .ok > /dev/null; then
             message_ts=$(echo "$initial_message_response" | jq -r .ts)
             echo "Message TS: $message_ts"
-            echo "message_ts=$message_ts" >> $GITHUB_ENV
-            issue_number=$(jq -r .pull_request.number "$GITHUB_EVENT_PATH")
-            comment_url="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/issues/$issue_number/comments"
-            echo "Comment URL: $comment_url"
-            comment_response=$(curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H 'Content-Type: application/json' --data "{
-              \"body\": \"Slack message_ts: $message_ts\"
-            }" "$comment_url")
-            echo "Comment response: $comment_response"
+            new_pr_body="Slack message_ts: ${message_ts}\n\n${pr_body}"
+            new_pr_body=$(echo -e "$new_pr_body")
+            echo "New PR body: $new_pr_body"
+
+            update_pr_response=$(curl -s -X PATCH -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" --data "$(jq -n --arg body "$new_pr_body" '{body: $body}')" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/$pr_number")
+            echo "Update PR response: $update_pr_response"
           else
             echo "Failed to retrieve message_ts"
             exit 1
@@ -49,12 +50,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_CHANNEL: 'C05PW7HGP36'  # Replace with your Slack channel ID
         run: |
-          comments_url=$(jq -r .pull_request.comments_url "$GITHUB_EVENT_PATH")
-          echo "Comments URL: $comments_url"
-          message_ts=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$comments_url" | jq -r '.[] | select(.body | startswith("Slack message_ts:")) | .body' | awk '{print $3}')
+          pr_number=$(jq -r .pull_request.number "$GITHUB_EVENT_PATH")
+          pr_body=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/$pr_number" | jq -r .body)
+          message_ts=$(echo "$pr_body" | grep -oP 'Slack message_ts: \K\S+')
           echo "Retrieved message_ts: $message_ts"
           if [ -z "$message_ts" ]; then
-            echo "Error: No message_ts found in pull request comments."
+            echo "Error: No message_ts found in pull request description."
             exit 1
           fi
 
