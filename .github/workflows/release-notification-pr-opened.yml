@@ -1,18 +1,35 @@
 name: Release Notification on PR Opened
 
 on:
-  pull_request:
-    types: [opened, reopened]
+  push:
+    branches:
+      - 'release-*'
 
 jobs:
   notify:
-    if: startsWith(github.event.pull_request.head.ref, 'release-')
     runs-on: ubuntu-latest
     steps:
       - name: Install jq
         run: sudo apt-get install -y jq
 
+      - name: Check for open pull requests for the branch
+        id: check_pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          branch_name="${GITHUB_REF##*/}"
+          pr_response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?state=open&head=$GITHUB_REPOSITORY:$branch_name")
+          echo "PR Response: $pr_response"
+          if echo "$pr_response" | jq -e 'length > 0' > /dev/null; then
+            echo "PR already exists."
+            echo "pr_exists=true" >> $GITHUB_ENV
+          else
+            echo "No PR found."
+            echo "pr_exists=false" >> $GITHUB_ENV
+          fi
+
       - name: Send initial message to Slack
+        if: env.pr_exists == 'false'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL: 'C05PW7HGP36'  # Replace with your Slack channel ID
@@ -45,6 +62,7 @@ jobs:
           fi
 
       - name: Fetch and send commit messages to Slack
+        if: env.pr_exists == 'false'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
