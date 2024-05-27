@@ -3,10 +3,11 @@ name: Release Notification on PR Opened
 on:
   pull_request:
     types: [opened, reopened]
+    branches:
+      - 'release-*'
 
 jobs:
   notify:
-    if: startsWith(github.event.pull_request.head.ref, 'release-')
     runs-on: ubuntu-latest
     steps:
       - name: Install jq
