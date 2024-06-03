@@ -10,7 +10,7 @@ jobs:
     steps:
 
       - name: Send Slack notification
-        uses: duckdum/slack-release-notifications@v1.0.3
+        uses: thunkable/slack-release-notifications@v1.0.3
         with:
           slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           slack-channel: 'C05PW7HGP36'
