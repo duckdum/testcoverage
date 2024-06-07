@@ -6,12 +6,30 @@ on:
 
 jobs:
   slack_notification:
-    runs-on: ubuntu-latest
+    if: startsWith(github.event.pull_request.head.ref, 'release-')
+    runs-on: ubuntu-22.04
     steps:
-
       - name: Send Slack notification
         uses: thunkable/slack-release-notifications@v1.0.5
         with:
           slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          slack-channel: 'C05PW7HGP36'
+          slack-channel: 'C05PW7HGP36' # Channel ID of #release-notifications slack channel
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          initial-message-template: ':traffic_light:<${prUrl}|${prTitle}>'
+          github-to-slack-map: |
+            {
+              "mduchev": "U04K5DCNF18",
+              "krzysztof-kolakowski": "U03HMV3T2GH",
+              "opchaves": "U051MKEPJ8Y",
+              "ommiles": "U02CR4R48JX",
+              "duckdum": "UTRMW2371",
+              "rminhoto": "U05CT8P804T",
+              "pecabum": "U0461TZ2A2V",
+              "pmwthunkable": "U051MKEPJ8Y",
+              "JanhaviDahihande": "UJVRSE8D7",
+              "josmas": "URKH7GXM2",
+              "TingC": "U6EMD2ZG9",
+              "andresmechali": "U05QQEPP849",
+              "Comum": "U04LY9803C1",
+              "weihuali0509": "U1BCM5ZU4"
+            }
