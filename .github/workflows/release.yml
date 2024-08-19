@@ -17,4 +17,12 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           comment-template: |
-            🎉 Hooray! 🎊 This is now part of [{{name}}]({{html_url}}) ✨
+            :tada: This is included in version {release_link} :tada:
+
+            The release is available on:
+
+            * [GitHub releases](https://github.com/duckdum/testcoverage/releases/tag/{release_tag})
+
+             Cheers! 📦🚀
+          label-template: ":rocket: released,release-{release_tag}"
+          
