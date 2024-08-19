@@ -1,0 +1,19 @@
+name: Comment on Released PRs
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  comment-released-prs:
+    if: github.event.release.prerelease == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Comment on PRs
+        uses: rdlf0/comment-released-prs-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-body: "🎉 Hooray! 🎊 This is now part of [{{name}}]({{html_url}}) ✨"
