@@ -14,5 +14,5 @@ jobs:
       - name: Comment on PRs
         uses: rdlf0/comment-released-prs-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
           comment-body: "🎉 Hooray! 🎊 This is now part of [{{name}}]({{html_url}}) ✨"
