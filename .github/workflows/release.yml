@@ -6,7 +6,6 @@ on:
 
 jobs:
   comment-released-prs:
-    if: github.event.release.prerelease == false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
